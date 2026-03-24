@@ -31,8 +31,7 @@ import { clamp, createItem, isColliding } from './game/utils';
 import { createHeartItem } from './game/utils';
 
 const ARENA_WIDTH = 360;
-const ARENA_HEIGHT = 640;
-const PLAYER_Y = ARENA_HEIGHT - PLAYER_HEIGHT - 20;
+const DEFAULT_ARENA_HEIGHT = 640;
 const PLAYER_SPEED = 330;
 
 export default function App() {
@@ -48,6 +47,7 @@ export default function App() {
   const [isScoreSaved, setIsScoreSaved] = useState(false);
   const [isCatHurt, setIsCatHurt] = useState(false);
   const [arenaScale, setArenaScale] = useState(1);
+  const [arenaHeight, setArenaHeight] = useState(DEFAULT_ARENA_HEIGHT);
 
   const animationFrameRef = useRef<number>();
   const countdownTimeoutRef = useRef<number>();
@@ -76,6 +76,32 @@ export default function App() {
   const gameLayoutRef = useRef<HTMLElement>(null);
   const hudRef = useRef<HTMLDivElement>(null);
   const touchControlsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateArenaHeight = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      if (width <= 420) {
+        setArenaHeight(height <= 760 ? 520 : 560);
+        return;
+      }
+
+      if (width <= 560) {
+        setArenaHeight(height <= 820 ? 560 : 600);
+        return;
+      }
+
+      setArenaHeight(DEFAULT_ARENA_HEIGHT);
+    };
+
+    updateArenaHeight();
+    window.addEventListener('resize', updateArenaHeight);
+
+    return () => {
+      window.removeEventListener('resize', updateArenaHeight);
+    };
+  }, []);
 
   useEffect(() => {
     gameStartAudioRef.current = new Audio(gameStartUrl);
@@ -165,7 +191,7 @@ export default function App() {
       const nextScale = Math.min(
         1,
         availableWidth / ARENA_WIDTH,
-        availableHeight / ARENA_HEIGHT,
+        availableHeight / arenaHeight,
       );
 
       setArenaScale((current) => (Math.abs(current - nextScale) > 0.01 ? nextScale : current));
@@ -191,7 +217,7 @@ export default function App() {
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateArenaScale);
     };
-  }, [screen]);
+  }, [arenaHeight, screen]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -290,7 +316,7 @@ export default function App() {
           const nextY = item.y + item.speed * settings.speedMultiplier * deltaSeconds;
           const movedItem = { ...item, y: nextY };
 
-          if (isColliding(movedItem, gameStateRef.current.playerX, PLAYER_Y)) {
+          if (isColliding(movedItem, gameStateRef.current.playerX, playerY)) {
             if (movedItem.type === 'heart') {
               livesGained += movedItem.heal ?? 1;
             } else if (movedItem.kind === 'good') {
@@ -301,7 +327,7 @@ export default function App() {
             return;
           }
 
-          if (nextY <= ARENA_HEIGHT) {
+          if (nextY <= arenaHeight) {
             remaining.push(movedItem);
           }
         });
@@ -490,14 +516,15 @@ export default function App() {
     () => DIFFICULTY_SETTINGS[difficulty].label,
     [difficulty],
   );
+  const playerY = arenaHeight - PLAYER_HEIGHT - 20;
   const arenaViewportStyle = useMemo(
     () =>
       ({
         ['--arena-scale' as string]: arenaScale.toString(),
         ['--arena-width' as string]: `${ARENA_WIDTH}px`,
-        ['--arena-height' as string]: `${ARENA_HEIGHT}px`,
+        ['--arena-height' as string]: `${arenaHeight}px`,
       }) satisfies CSSProperties,
-    [arenaScale],
+    [arenaHeight, arenaScale],
   );
 
   return (
@@ -635,7 +662,7 @@ export default function App() {
                 <div
                   aria-label="Pastel cat"
                   className={`cat-sprite${isCatHurt ? ' hurt' : ''}`}
-                  style={{ transform: `translate(${playerX}px, ${PLAYER_Y}px)` }}
+                  style={{ transform: `translate(${playerX}px, ${playerY}px)` }}
                 >
                   <span className="cat-ear cat-ear-left" />
                   <span className="cat-ear cat-ear-right" />
