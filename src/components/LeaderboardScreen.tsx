@@ -11,7 +11,7 @@ export function LeaderboardScreen({
   onBack,
 }: LeaderboardScreenProps) {
   return (
-    <section className="panel screen-card">
+    <section className="panel screen-card app-screen-card leaderboard-screen">
       <div className="section-head">
         <div>
           <p className="eyebrow">Hall of Fame</p>

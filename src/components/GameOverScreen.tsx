@@ -26,7 +26,7 @@ export function GameOverScreen({
   onShowLeaderboard,
 }: GameOverScreenProps) {
   return (
-    <section className="panel screen-card">
+    <section className="panel screen-card app-screen-card game-over-screen">
       <p className="eyebrow">Round Finished</p>
       <h2>Game Over</h2>
       <p className="screen-copy">

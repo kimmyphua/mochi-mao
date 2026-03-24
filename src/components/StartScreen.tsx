@@ -15,7 +15,7 @@ export function StartScreen({
   onLeaderboard,
 }: StartScreenProps) {
   return (
-    <section className="panel screen-card start-screen">
+    <section className="panel screen-card start-screen app-screen-card">
       <p className="eyebrow">Cozy Arcade</p>
       <h1>Mochi Mao's Treats</h1>
       <p className="screen-copy">

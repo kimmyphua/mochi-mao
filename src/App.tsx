@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import badCatchUrl from './sounds/bad_catch.mp3';
 import easyBgmUrl from './sounds/bgm_level_easy.mp3';
 import hardBgmUrl from './sounds/bgm_level_hard.mp3';
@@ -46,6 +47,7 @@ export default function App() {
   const [playerName, setPlayerName] = useState('Mochi');
   const [isScoreSaved, setIsScoreSaved] = useState(false);
   const [isCatHurt, setIsCatHurt] = useState(false);
+  const [arenaScale, setArenaScale] = useState(1);
 
   const animationFrameRef = useRef<number>();
   const countdownTimeoutRef = useRef<number>();
@@ -71,6 +73,9 @@ export default function App() {
   });
   const screenRef = useRef<GameScreen>('start');
   const touchStartXRef = useRef<number | null>(null);
+  const gameLayoutRef = useRef<HTMLElement>(null);
+  const hudRef = useRef<HTMLDivElement>(null);
+  const touchControlsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     gameStartAudioRef.current = new Audio(gameStartUrl);
@@ -114,6 +119,78 @@ export default function App() {
 
   useEffect(() => {
     screenRef.current = screen;
+  }, [screen]);
+
+  useEffect(() => {
+    const isScreenLocked = true;
+    const isPlayingLikeScreen = screen === 'playing';
+    document.body.classList.toggle('screen-locked', isScreenLocked);
+    document.documentElement.classList.toggle('screen-locked', isScreenLocked);
+    document.body.classList.toggle('playing-mode', isPlayingLikeScreen);
+    document.documentElement.classList.toggle('playing-mode', isPlayingLikeScreen);
+
+    return () => {
+      document.body.classList.remove('screen-locked');
+      document.documentElement.classList.remove('screen-locked');
+      document.body.classList.remove('playing-mode');
+      document.documentElement.classList.remove('playing-mode');
+    };
+  }, [screen]);
+
+  useEffect(() => {
+    if (screen !== 'playing') {
+      setArenaScale(1);
+      return;
+    }
+
+    const updateArenaScale = () => {
+      const layout = gameLayoutRef.current;
+      const hud = hudRef.current;
+      const touchControls = touchControlsRef.current;
+      if (!layout || !hud) {
+        return;
+      }
+
+      const layoutStyles = window.getComputedStyle(layout);
+      const rowGap = Number.parseFloat(layoutStyles.rowGap || layoutStyles.gap || '0');
+      const touchControlsVisible =
+        touchControls && window.getComputedStyle(touchControls).display !== 'none';
+      const controlsHeight = touchControlsVisible ? touchControls.offsetHeight : 0;
+      const verticalGaps = rowGap * (touchControlsVisible ? 2 : 1);
+      const availableHeight = Math.max(
+        240,
+        layout.clientHeight - hud.offsetHeight - controlsHeight - verticalGaps,
+      );
+      const availableWidth = Math.max(260, layout.clientWidth);
+      const nextScale = Math.min(
+        1,
+        availableWidth / ARENA_WIDTH,
+        availableHeight / ARENA_HEIGHT,
+      );
+
+      setArenaScale((current) => (Math.abs(current - nextScale) > 0.01 ? nextScale : current));
+    };
+
+    const animationFrame = window.requestAnimationFrame(updateArenaScale);
+    const resizeObserver = new ResizeObserver(updateArenaScale);
+
+    if (gameLayoutRef.current) {
+      resizeObserver.observe(gameLayoutRef.current);
+    }
+    if (hudRef.current) {
+      resizeObserver.observe(hudRef.current);
+    }
+    if (touchControlsRef.current) {
+      resizeObserver.observe(touchControlsRef.current);
+    }
+
+    window.addEventListener('resize', updateArenaScale);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateArenaScale);
+    };
   }, [screen]);
 
   useEffect(() => {
@@ -413,11 +490,38 @@ export default function App() {
     () => DIFFICULTY_SETTINGS[difficulty].label,
     [difficulty],
   );
+  const arenaViewportStyle = useMemo(
+    () =>
+      ({
+        ['--arena-scale' as string]: arenaScale.toString(),
+        ['--arena-width' as string]: `${ARENA_WIDTH}px`,
+        ['--arena-height' as string]: `${ARENA_HEIGHT}px`,
+      }) satisfies CSSProperties,
+    [arenaScale],
+  );
 
   return (
-    <main className="app-shell">
-      <div className="app-frame">
-        <div className="brand-panel">
+    <main
+      className={`app-shell fixed-shell${
+        screen === 'playing' ? ' playing-shell' : ''
+      }`}
+    >
+      <div
+        className={`app-frame fixed-frame${
+          screen === 'playing' ? ' playing-frame' : ''
+        }`}
+        style={screen === 'playing' ? arenaViewportStyle : undefined}
+      >
+        <div
+          className={`brand-panel${screen === 'playing' ? ' compact-brand' : ''}${
+            screen === 'gameOver' ||
+            screen === 'start' ||
+            screen === 'countdown' ||
+            screen === 'leaderboard'
+              ? ' app-screen-brand'
+              : ''
+          }`}
+        >
           <p className="pixel-badge">Mochi Mao</p>
           <p className="brand-copy">
             Catch the treats. Dodge the trouble.
@@ -441,7 +545,7 @@ export default function App() {
         )}
 
         {screen === 'countdown' && (
-          <section className="panel screen-card countdown-screen">
+          <section className="panel screen-card countdown-screen app-screen-card">
             <p className="eyebrow">Get Ready</p>
             <h2>MOCHI MAO</h2>
             <p className="screen-copy">Catch the treats. Dodge the trouble.</p>
@@ -487,60 +591,67 @@ export default function App() {
         )}
 
         {screen === 'playing' && (
-          <section className="game-layout">
-            <GameHud
-              difficultyLabel={difficultyLabel}
-              lives={lives}
-              score={score}
-              timeLeft={Math.max(0, Math.ceil(timeLeft))}
-            />
+          <section ref={gameLayoutRef} className="game-layout">
+            <div ref={hudRef}>
+              <GameHud
+                difficultyLabel={difficultyLabel}
+                lives={lives}
+                score={score}
+                timeLeft={Math.max(0, Math.ceil(timeLeft))}
+              />
+            </div>
 
-            <div
-              className="game-arena panel"
-              onTouchEnd={(event) => handleSwipeEnd(event.changedTouches[0]?.clientX ?? 0)}
-              onTouchStart={(event) => handleSwipeStart(event.touches[0]?.clientX ?? 0)}
-            >
-              <div className="pixel-cloud pixel-cloud-left" />
-              <div className="pixel-cloud pixel-cloud-right" />
-              <div className="skyline" />
-              <div className="ground-strip" />
-
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  aria-label={item.label}
-                  className={`falling-item ${item.kind} ${item.type}`}
-                  style={{
-                    transform: `translate(${item.x}px, ${item.y}px)`,
-                    ['--item-color' as string]: item.color,
-                    ['--item-accent' as string]: item.accent,
-                    ['--item-size' as string]: `${item.size ?? ITEM_SIZE}px`,
-                  }}
-                >
-                  <span aria-hidden="true" className="item-art" />
-                  <span className="sr-only">{item.label}</span>
-                </div>
-              ))}
-
+            <div className="game-viewport" style={arenaViewportStyle}>
               <div
-                aria-label="Pastel cat"
-                className={`cat-sprite${isCatHurt ? ' hurt' : ''}`}
-                style={{ transform: `translate(${playerX}px, ${PLAYER_Y}px)` }}
+                className="game-arena panel"
+                onTouchEnd={(event) => handleSwipeEnd(event.changedTouches[0]?.clientX ?? 0)}
+                onTouchMove={(event) => {
+                  event.preventDefault();
+                }}
+                onTouchStart={(event) => handleSwipeStart(event.touches[0]?.clientX ?? 0)}
               >
-                <span className="cat-ear cat-ear-left" />
-                <span className="cat-ear cat-ear-right" />
-                <span className="cat-face">
-                  <span className="cat-eye left" />
-                  <span className="cat-eye right" />
-                  <span className="cat-nose" />
-                  <span className="cat-mouth" />
-                </span>
-                <span className="cat-paw cat-paw-left" />
-                <span className="cat-paw cat-paw-right" />
+                <div className="pixel-cloud pixel-cloud-left" />
+                <div className="pixel-cloud pixel-cloud-right" />
+                <div className="skyline" />
+                <div className="ground-strip" />
+
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    aria-label={item.label}
+                    className={`falling-item ${item.kind} ${item.type}`}
+                    style={{
+                      transform: `translate(${item.x}px, ${item.y}px)`,
+                      ['--item-color' as string]: item.color,
+                      ['--item-accent' as string]: item.accent,
+                      ['--item-size' as string]: `${item.size ?? ITEM_SIZE}px`,
+                    }}
+                  >
+                    <span aria-hidden="true" className="item-art" />
+                    <span className="sr-only">{item.label}</span>
+                  </div>
+                ))}
+
+                <div
+                  aria-label="Pastel cat"
+                  className={`cat-sprite${isCatHurt ? ' hurt' : ''}`}
+                  style={{ transform: `translate(${playerX}px, ${PLAYER_Y}px)` }}
+                >
+                  <span className="cat-ear cat-ear-left" />
+                  <span className="cat-ear cat-ear-right" />
+                  <span className="cat-face">
+                    <span className="cat-eye left" />
+                    <span className="cat-eye right" />
+                    <span className="cat-nose" />
+                    <span className="cat-mouth" />
+                  </span>
+                  <span className="cat-paw cat-paw-left" />
+                  <span className="cat-paw cat-paw-right" />
+                </div>
               </div>
             </div>
 
-            <div className="touch-controls">
+            <div ref={touchControlsRef} className="touch-controls">
               <button
                 className="touch-button"
                 onPointerDown={() => {
