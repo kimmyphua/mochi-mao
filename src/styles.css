@@ -1190,20 +1190,13 @@ input[type='text'] {
   }
 
   .playing-frame {
-    width: 100%;
-  }
-
-  .playing-frame {
     gap: 8px;
   }
 
   .playing-frame .game-layout {
-    width: 100%;
+    width: min(100%, calc(var(--arena-width, 360px) * var(--arena-scale, 1)));
+    justify-self: center;
     gap: 8px;
-  }
-
-  .game-viewport {
-    width: 100%;
   }
 
   .playing-frame .hud {
