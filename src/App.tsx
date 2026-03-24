@@ -30,7 +30,7 @@ import type {
 import { clamp, createItem, isColliding } from './game/utils';
 import { createHeartItem } from './game/utils';
 
-const ARENA_WIDTH = 360;
+const DEFAULT_ARENA_WIDTH = 360;
 const DEFAULT_ARENA_HEIGHT = 640;
 const PLAYER_SPEED = 330;
 
@@ -41,12 +41,13 @@ export default function App() {
   const [lives, setLives] = useState(STARTING_LIVES);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION_SECONDS);
   const [items, setItems] = useState<FallingItem[]>([]);
-  const [playerX, setPlayerX] = useState((ARENA_WIDTH - PLAYER_WIDTH) / 2);
+  const [playerX, setPlayerX] = useState((DEFAULT_ARENA_WIDTH - PLAYER_WIDTH) / 2);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [playerName, setPlayerName] = useState('Mochi');
   const [isScoreSaved, setIsScoreSaved] = useState(false);
   const [isCatHurt, setIsCatHurt] = useState(false);
   const [arenaScale, setArenaScale] = useState(1);
+  const [arenaWidth, setArenaWidth] = useState(DEFAULT_ARENA_WIDTH);
   const [arenaHeight, setArenaHeight] = useState(DEFAULT_ARENA_HEIGHT);
 
   const animationFrameRef = useRef<number>();
@@ -68,7 +69,7 @@ export default function App() {
     score: 0,
     lives: STARTING_LIVES,
     timeLeft: GAME_DURATION_SECONDS,
-    playerX: (ARENA_WIDTH - PLAYER_WIDTH) / 2,
+    playerX: (DEFAULT_ARENA_WIDTH - PLAYER_WIDTH) / 2,
     difficulty: 'normal' as Difficulty,
   });
   const screenRef = useRef<GameScreen>('start');
@@ -78,28 +79,34 @@ export default function App() {
   const touchControlsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const updateArenaHeight = () => {
+    const updateArenaSize = () => {
       const width = window.innerWidth;
       const height = window.innerHeight;
+      const nextArenaWidth =
+        width <= 560
+          ? Math.max(320, Math.min(408, width - 28))
+          : DEFAULT_ARENA_WIDTH;
+
+      setArenaWidth(nextArenaWidth);
 
       if (width <= 420) {
-        setArenaHeight(height <= 760 ? 520 : 560);
+        setArenaHeight(height <= 760 ? 460 : 500);
         return;
       }
 
       if (width <= 560) {
-        setArenaHeight(height <= 820 ? 560 : 600);
+        setArenaHeight(height <= 820 ? 500 : 540);
         return;
       }
 
       setArenaHeight(DEFAULT_ARENA_HEIGHT);
     };
 
-    updateArenaHeight();
-    window.addEventListener('resize', updateArenaHeight);
+    updateArenaSize();
+    window.addEventListener('resize', updateArenaSize);
 
     return () => {
-      window.removeEventListener('resize', updateArenaHeight);
+      window.removeEventListener('resize', updateArenaSize);
     };
   }, []);
 
@@ -142,6 +149,15 @@ export default function App() {
     gameStateRef.current.playerX = playerX;
     gameStateRef.current.difficulty = difficulty;
   }, [difficulty, lives, playerX, score, timeLeft]);
+
+  useEffect(() => {
+    const maxPlayerX = Math.max(0, arenaWidth - PLAYER_WIDTH);
+    setPlayerX((current) => {
+      const nextX = clamp(current, 0, maxPlayerX);
+      gameStateRef.current.playerX = nextX;
+      return nextX;
+    });
+  }, [arenaWidth]);
 
   useEffect(() => {
     screenRef.current = screen;
@@ -190,7 +206,7 @@ export default function App() {
       const availableWidth = Math.max(260, layout.clientWidth);
       const nextScale = Math.min(
         1,
-        availableWidth / ARENA_WIDTH,
+        availableWidth / arenaWidth,
         availableHeight / arenaHeight,
       );
 
@@ -217,7 +233,7 @@ export default function App() {
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateArenaScale);
     };
-  }, [arenaHeight, screen]);
+  }, [arenaHeight, arenaWidth, screen]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -277,7 +293,7 @@ export default function App() {
 
       setPlayerX((current) => {
         const moved = current + movementRef.current * PLAYER_SPEED * deltaSeconds;
-        const clamped = clamp(moved, 0, ARENA_WIDTH - PLAYER_WIDTH);
+        const clamped = clamp(moved, 0, arenaWidth - PLAYER_WIDTH);
         gameStateRef.current.playerX = clamped;
         return clamped;
       });
@@ -287,7 +303,7 @@ export default function App() {
 
       if (spawnAccumulatorRef.current >= settings.spawnIntervalMs) {
         spawnAccumulatorRef.current -= settings.spawnIntervalMs;
-        nextItems.push(createItem(++itemIdRef.current, difficulty, ARENA_WIDTH));
+        nextItems.push(createItem(++itemIdRef.current, difficulty, arenaWidth));
       }
 
       if (gameStateRef.current.lives < STARTING_LIVES) {
@@ -298,7 +314,7 @@ export default function App() {
 
         heartSpawnTimerRef.current -= deltaSeconds;
         if (heartSpawnTimerRef.current <= 0) {
-          nextItems.push(createHeartItem(++itemIdRef.current, ARENA_WIDTH));
+          nextItems.push(createHeartItem(++itemIdRef.current, arenaWidth));
           heartSpawnTimerRef.current = randomHeartDelaySeconds();
         }
       } else {
@@ -378,10 +394,10 @@ export default function App() {
         window.cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [difficulty, screen]);
+  }, [arenaHeight, arenaWidth, difficulty, screen]);
 
   function resetGameState() {
-    const initialX = (ARENA_WIDTH - PLAYER_WIDTH) / 2;
+    const initialX = (arenaWidth - PLAYER_WIDTH) / 2;
     movementRef.current = 0;
     itemIdRef.current = 0;
     spawnAccumulatorRef.current = 0;
@@ -503,7 +519,7 @@ export default function App() {
         const nextX = clamp(
           current + Math.sign(deltaX) * 56,
           0,
-          ARENA_WIDTH - PLAYER_WIDTH,
+          arenaWidth - PLAYER_WIDTH,
         );
         gameStateRef.current.playerX = nextX;
         return nextX;
@@ -521,10 +537,10 @@ export default function App() {
     () =>
       ({
         ['--arena-scale' as string]: arenaScale.toString(),
-        ['--arena-width' as string]: `${ARENA_WIDTH}px`,
+        ['--arena-width' as string]: `${arenaWidth}px`,
         ['--arena-height' as string]: `${arenaHeight}px`,
       }) satisfies CSSProperties,
-    [arenaHeight, arenaScale],
+    [arenaHeight, arenaScale, arenaWidth],
   );
 
   return (
