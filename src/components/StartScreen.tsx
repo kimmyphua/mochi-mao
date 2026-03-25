@@ -18,13 +18,9 @@ export function StartScreen({
     <section className="panel screen-card start-screen app-screen-card">
       <p className="eyebrow">Cozy Arcade</p>
       <h1>Mochi Mao's Treats</h1>
-      <p className="screen-copy">
-        Guide the pastel cat, catch sweet treats, and dodge the nasty obstacles
-        before the 90-second timer runs out.
-      </p>
+      <p className="screen-copy">Catch treats, dodge trouble, and beat the clock.</p>
 
       <div className="difficulty-group">
-        <p className="section-label">Choose difficulty</p>
         <div className="difficulty-grid">
           {(Object.entries(DIFFICULTY_SETTINGS) as [Difficulty, (typeof DIFFICULTY_SETTINGS)[Difficulty]][]).map(
             ([value, config]) => (

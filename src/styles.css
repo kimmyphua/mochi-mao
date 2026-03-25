@@ -500,6 +500,10 @@ h2 {
   height: var(--arena-height, 640px);
   overflow: hidden;
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
   transform: scale(var(--arena-scale, 1));
   transform-origin: top left;
   background:
@@ -576,12 +580,16 @@ h2 {
 .falling-item {
   position: absolute;
   image-rendering: pixelated;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .cat-sprite {
   width: 72px;
   height: 48px;
   position: absolute;
+  will-change: transform;
   background:
     linear-gradient(135deg, #fffaf4, #ffdff0);
   border: 3px solid #6c5564;
@@ -762,6 +770,7 @@ h2 {
 .falling-item {
   width: var(--item-size, 34px);
   height: var(--item-size, 34px);
+  will-change: transform;
   border: 3px solid #6d5662;
   background: var(--item-color);
   background-position: center;
@@ -1051,6 +1060,9 @@ h2 {
   gap: 10px;
   width: min(100%, 360px);
   margin: 0 auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .touch-button {
@@ -1062,6 +1074,8 @@ h2 {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .touch-button:focus,

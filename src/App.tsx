@@ -74,6 +74,7 @@ export default function App() {
   });
   const screenRef = useRef<GameScreen>('start');
   const touchStartXRef = useRef<number | null>(null);
+  const touchPlayerStartXRef = useRef<number | null>(null);
   const gameLayoutRef = useRef<HTMLElement>(null);
   const hudRef = useRef<HTMLDivElement>(null);
   const touchControlsRef = useRef<HTMLDivElement>(null);
@@ -145,10 +146,9 @@ export default function App() {
   useEffect(() => {
     gameStateRef.current.score = score;
     gameStateRef.current.lives = lives;
-    gameStateRef.current.timeLeft = timeLeft;
     gameStateRef.current.playerX = playerX;
     gameStateRef.current.difficulty = difficulty;
-  }, [difficulty, lives, playerX, score, timeLeft]);
+  }, [difficulty, lives, playerX, score]);
 
   useEffect(() => {
     const maxPlayerX = Math.max(0, arenaWidth - PLAYER_WIDTH);
@@ -477,6 +477,26 @@ export default function App() {
 
   function handleSwipeStart(clientX: number) {
     touchStartXRef.current = clientX;
+    touchPlayerStartXRef.current = gameStateRef.current.playerX;
+  }
+
+  function handleSwipeMove(clientX: number) {
+    if (
+      touchStartXRef.current === null ||
+      touchPlayerStartXRef.current === null ||
+      screen !== 'playing'
+    ) {
+      return;
+    }
+
+    const deltaX = clientX - touchStartXRef.current;
+    const nextX = clamp(
+      touchPlayerStartXRef.current + deltaX / Math.max(arenaScale, 0.001),
+      0,
+      arenaWidth - PLAYER_WIDTH,
+    );
+    gameStateRef.current.playerX = nextX;
+    setPlayerX(nextX);
   }
 
   function playSound(audio?: HTMLAudioElement) {
@@ -510,22 +530,13 @@ export default function App() {
   function handleSwipeEnd(clientX: number) {
     if (touchStartXRef.current === null || screen !== 'playing') {
       touchStartXRef.current = null;
+      touchPlayerStartXRef.current = null;
       return;
     }
 
-    const deltaX = clientX - touchStartXRef.current;
-    if (Math.abs(deltaX) > 24) {
-      setPlayerX((current) => {
-        const nextX = clamp(
-          current + Math.sign(deltaX) * 56,
-          0,
-          arenaWidth - PLAYER_WIDTH,
-        );
-        gameStateRef.current.playerX = nextX;
-        return nextX;
-      });
-    }
+    handleSwipeMove(clientX);
     touchStartXRef.current = null;
+    touchPlayerStartXRef.current = null;
   }
 
   const difficultyLabel = useMemo(
@@ -650,6 +661,7 @@ export default function App() {
                 onTouchEnd={(event) => handleSwipeEnd(event.changedTouches[0]?.clientX ?? 0)}
                 onTouchMove={(event) => {
                   event.preventDefault();
+                  handleSwipeMove(event.touches[0]?.clientX ?? 0);
                 }}
                 onTouchStart={(event) => handleSwipeStart(event.touches[0]?.clientX ?? 0)}
               >
