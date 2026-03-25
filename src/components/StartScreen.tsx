@@ -53,7 +53,7 @@ export function StartScreen({
 
       <div className="control-hint">
         <span>Desktop: arrow keys</span>
-        <span>Mobile: swipe or hold touch buttons</span>
+        <span>Mobile: swipe left or right</span>
       </div>
     </section>
   );

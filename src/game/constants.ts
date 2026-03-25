@@ -81,7 +81,7 @@ export const DIFFICULTY_SETTINGS: Record<
   hard: {
     label: 'Hard',
     durationSeconds: 90,
-    speedMultiplier: 1.3,
+    speedMultiplier: 1.2,
     spawnIntervalMs: 620,
     badChance: 0.45,
     phases: [
@@ -93,16 +93,16 @@ export const DIFFICULTY_SETTINGS: Record<
       {
         triggerTimeLeft: 60,
         kind: 'danger',
-        durationSeconds: 5,
+        durationSeconds: 7,
       },
       {
         triggerTimeLeft: 30,
-        kind: 'bonus',
+        kind: 'danger',
         durationSeconds: 5,
       },
       {
         triggerTimeLeft: 15,
-        kind: 'danger',
+        kind: 'bonus',
         durationSeconds: 5,
       },
     ],

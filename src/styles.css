@@ -803,51 +803,45 @@ h2 {
 }
 
 .cat-sprite.mood-danger .cat-eye {
-  top: 1px;
-  width: 10px;
-  height: 7px;
-  background: transparent;
+  top: 2px;
+  width: 8px;
+  height: 8px;
+  background: #55424e;
+  border-radius: 999px;
 }
 
 .cat-sprite.mood-danger .cat-eye.left {
-  left: 2px;
+  left: 3px;
   transform: none;
 }
 
 .cat-sprite.mood-danger .cat-eye.right {
-  right: 2px;
+  right: 3px;
   transform: none;
 }
 
-.cat-sprite.mood-danger .cat-eye::before,
-.cat-sprite.mood-danger .cat-eye::after {
+.cat-sprite.mood-danger .cat-eye::before {
   content: '';
   position: absolute;
-  top: 2px;
-  width: 6px;
+  top: -5px;
+  width: 10px;
   height: 3px;
   background: #55424e;
   border-radius: 999px;
 }
 
 .cat-sprite.mood-danger .cat-eye.left::before {
-  left: 0;
-  transform: rotate(38deg);
-}
-
-.cat-sprite.mood-danger .cat-eye.left::after {
-  right: 0;
-  transform: rotate(-38deg);
+  left: -1px;
+  transform: rotate(28deg);
 }
 
 .cat-sprite.mood-danger .cat-eye.right::before {
-  left: 0;
-  transform: rotate(38deg);
+  right: -1px;
+  transform: rotate(-28deg);
 }
 
-.cat-sprite.mood-danger .cat-eye.right::after {
-  right: 0;
-  transform: rotate(-38deg);
+.cat-sprite.mood-danger .cat-eye::after {
+  display: none;
 }
 
 .cat-sprite.mood-danger .cat-mouth {
@@ -1227,14 +1221,7 @@ h2 {
 }
 
 .touch-controls {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  width: min(100%, 360px);
-  margin: 0 auto;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
+  display: none;
 }
 
 .touch-button {

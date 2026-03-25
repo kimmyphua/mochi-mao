@@ -109,12 +109,12 @@ export default function App() {
       setArenaWidth(nextArenaWidth);
 
       if (width <= 420) {
-        setArenaHeight(height <= 760 ? 460 : 500);
+        setArenaHeight(height <= 760 ? 540 : 620);
         return;
       }
 
       if (width <= 560) {
-        setArenaHeight(height <= 820 ? 500 : 540);
+        setArenaHeight(height <= 820 ? 620 : 700);
         return;
       }
 
@@ -719,7 +719,7 @@ export default function App() {
             <div className="instruction-card">
               <p className="section-label">Instructions</p>
               <p>Catch the treats and dodge the trouble.</p>
-              <p>Desktop: arrow keys. Mobile: swipe or use touch buttons.</p>
+              <p>Desktop: arrow keys. Mobile: swipe left or right.</p>
               <p>Mode: {difficultyLabel}</p>
             </div>
           </section>
