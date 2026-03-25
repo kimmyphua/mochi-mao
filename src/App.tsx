@@ -4,6 +4,8 @@ import badCatchUrl from './sounds/bad_catch.mp3';
 import easyBgmUrl from './sounds/bgm_level_easy.mp3';
 import hardBgmUrl from './sounds/bgm_level_hard.mp3';
 import mediumBgmUrl from './sounds/bgm_level_medium.mp3';
+import bonusModeUrl from './sounds/bonus_mode.mp3';
+import dangerModeUrl from './sounds/danger_mode.mp3';
 import gainLifeUrl from './sounds/gain_live.mp3';
 import gameOverUrl from './sounds/game_over.mp3';
 import gameStartUrl from './sounds/game_start.mp3';
@@ -16,7 +18,6 @@ import {
   DEFAULT_BRAND_TITLE,
   DEFAULT_PLAYER_NAME,
   DIFFICULTY_SETTINGS,
-  GAME_DURATION_SECONDS,
   ITEM_SIZE,
   LIFE_REMAINING_BONUS,
   PLAYER_HEIGHT,
@@ -30,6 +31,7 @@ import type {
   FallingItem,
   GameScreen,
   LeaderboardEntry,
+  PhaseKind,
 } from './game/types';
 import { clamp, createItem, isColliding } from './game/utils';
 import { createHeartItem } from './game/utils';
@@ -38,18 +40,23 @@ const DEFAULT_ARENA_WIDTH = 360;
 const DEFAULT_ARENA_HEIGHT = 640;
 const PLAYER_SPEED = 330;
 
+function getGameDuration(difficulty: Difficulty) {
+  return DIFFICULTY_SETTINGS[difficulty].durationSeconds;
+}
+
 export default function App() {
   const [screen, setScreen] = useState<GameScreen>('start');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(STARTING_LIVES);
-  const [timeLeft, setTimeLeft] = useState(GAME_DURATION_SECONDS);
+  const [timeLeft, setTimeLeft] = useState(getGameDuration('normal'));
   const [items, setItems] = useState<FallingItem[]>([]);
   const [playerX, setPlayerX] = useState((DEFAULT_ARENA_WIDTH - PLAYER_WIDTH) / 2);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [playerName, setPlayerName] = useState(DEFAULT_PLAYER_NAME);
   const [isScoreSaved, setIsScoreSaved] = useState(false);
   const [isCatHurt, setIsCatHurt] = useState(false);
+  const [currentPhaseKind, setCurrentPhaseKind] = useState<PhaseKind>('normal');
   const [arenaScale, setArenaScale] = useState(1);
   const [arenaWidth, setArenaWidth] = useState(DEFAULT_ARENA_WIDTH);
   const [arenaHeight, setArenaHeight] = useState(DEFAULT_ARENA_HEIGHT);
@@ -62,6 +69,8 @@ export default function App() {
   const badCatchAudioRef = useRef<HTMLAudioElement>();
   const gainLifeAudioRef = useRef<HTMLAudioElement>();
   const gameOverAudioRef = useRef<HTMLAudioElement>();
+  const bonusModeAudioRef = useRef<HTMLAudioElement>();
+  const dangerModeAudioRef = useRef<HTMLAudioElement>();
   const bgmAudioRefs = useRef<Record<Difficulty, HTMLAudioElement>>();
   const lastFrameRef = useRef(0);
   const spawnAccumulatorRef = useRef(0);
@@ -72,13 +81,16 @@ export default function App() {
   const gameStateRef = useRef({
     score: 0,
     lives: STARTING_LIVES,
-    timeLeft: GAME_DURATION_SECONDS,
+    timeLeft: getGameDuration('normal'),
     playerX: (DEFAULT_ARENA_WIDTH - PLAYER_WIDTH) / 2,
     difficulty: 'normal' as Difficulty,
+    phaseKind: 'normal' as PhaseKind,
+    phaseTimeLeft: 0,
   });
   const screenRef = useRef<GameScreen>('start');
   const touchStartXRef = useRef<number | null>(null);
   const touchPlayerStartXRef = useRef<number | null>(null);
+  const phaseIndexRef = useRef(0);
   const gameLayoutRef = useRef<HTMLElement>(null);
   const hudRef = useRef<HTMLDivElement>(null);
   const touchControlsRef = useRef<HTMLDivElement>(null);
@@ -123,6 +135,8 @@ export default function App() {
     badCatchAudioRef.current = new Audio(badCatchUrl);
     gainLifeAudioRef.current = new Audio(gainLifeUrl);
     gameOverAudioRef.current = new Audio(gameOverUrl);
+    bonusModeAudioRef.current = new Audio(bonusModeUrl);
+    dangerModeAudioRef.current = new Audio(dangerModeUrl);
     bgmAudioRefs.current = {
       easy: new Audio(easyBgmUrl),
       normal: new Audio(mediumBgmUrl),
@@ -130,6 +144,14 @@ export default function App() {
     };
 
     Object.values(bgmAudioRefs.current).forEach((audio) => {
+      audio.loop = true;
+      audio.volume = 0.35;
+    });
+
+    [bonusModeAudioRef.current, dangerModeAudioRef.current].forEach((audio) => {
+      if (!audio) {
+        return;
+      }
       audio.loop = true;
       audio.volume = 0.35;
     });
@@ -288,14 +310,42 @@ export default function App() {
       lastFrameRef.current = timestamp;
 
       const settings = DIFFICULTY_SETTINGS[gameStateRef.current.difficulty];
+      const previousTimeLeft = gameStateRef.current.timeLeft;
       const nextTimeLeft = Math.max(
         0,
-        gameStateRef.current.timeLeft - deltaSeconds,
+        previousTimeLeft - deltaSeconds,
       );
       if (Math.ceil(nextTimeLeft) !== Math.ceil(gameStateRef.current.timeLeft)) {
         setTimeLeft(Math.ceil(nextTimeLeft));
       }
       gameStateRef.current.timeLeft = nextTimeLeft;
+
+      const activePhase = gameStateRef.current.phaseKind;
+      if (activePhase !== 'normal') {
+        gameStateRef.current.phaseTimeLeft = Math.max(
+          0,
+          gameStateRef.current.phaseTimeLeft - deltaSeconds,
+        );
+        if (gameStateRef.current.phaseTimeLeft <= 0) {
+          gameStateRef.current.phaseKind = 'normal';
+          setCurrentPhaseKind('normal');
+          startBgm('normal');
+        }
+      }
+
+      const nextPhase = settings.phases[phaseIndexRef.current];
+      if (
+        nextPhase &&
+        previousTimeLeft >= nextPhase.triggerTimeLeft &&
+        nextTimeLeft <= nextPhase.triggerTimeLeft
+      ) {
+        gameStateRef.current.phaseKind = nextPhase.kind;
+        gameStateRef.current.phaseTimeLeft = nextPhase.durationSeconds;
+        setCurrentPhaseKind(nextPhase.kind);
+        phaseIndexRef.current += 1;
+        spawnAccumulatorRef.current = settings.spawnIntervalMs;
+        startBgm(nextPhase.kind);
+      }
 
       setPlayerX((current) => {
         const moved = current + movementRef.current * PLAYER_SPEED * deltaSeconds;
@@ -307,12 +357,25 @@ export default function App() {
       spawnAccumulatorRef.current += deltaSeconds * 1000;
       const nextItems: FallingItem[] = [];
 
-      if (spawnAccumulatorRef.current >= settings.spawnIntervalMs) {
-        spawnAccumulatorRef.current -= settings.spawnIntervalMs;
-        nextItems.push(createItem(++itemIdRef.current, difficulty, arenaWidth));
+      const currentPhaseKind = gameStateRef.current.phaseKind;
+      const spawnIntervalMs =
+        currentPhaseKind === 'bonus'
+          ? Math.max(220, settings.spawnIntervalMs * 0.45)
+          : settings.spawnIntervalMs;
+
+      if (spawnAccumulatorRef.current >= spawnIntervalMs) {
+        spawnAccumulatorRef.current -= spawnIntervalMs;
+        nextItems.push(
+          createItem(
+            ++itemIdRef.current,
+            difficulty,
+            arenaWidth,
+            currentPhaseKind,
+          ),
+        );
       }
 
-      if (gameStateRef.current.lives < STARTING_LIVES) {
+      if (gameStateRef.current.lives < STARTING_LIVES && currentPhaseKind !== 'danger') {
         if (!heartSpawnArmedRef.current) {
           heartSpawnArmedRef.current = true;
           heartSpawnTimerRef.current = randomHeartDelaySeconds();
@@ -409,24 +472,29 @@ export default function App() {
     spawnAccumulatorRef.current = 0;
     heartSpawnTimerRef.current = 0;
     heartSpawnArmedRef.current = false;
+    phaseIndexRef.current = 0;
     if (countdownTimeoutRef.current) {
       window.clearTimeout(countdownTimeoutRef.current);
     }
+    const durationSeconds = getGameDuration(difficulty);
     gameStateRef.current = {
       score: 0,
       lives: STARTING_LIVES,
-      timeLeft: GAME_DURATION_SECONDS,
+      timeLeft: durationSeconds,
       playerX: initialX,
       difficulty,
+      phaseKind: 'normal',
+      phaseTimeLeft: 0,
     };
     setScore(0);
     setLives(STARTING_LIVES);
-    setTimeLeft(GAME_DURATION_SECONDS);
+    setTimeLeft(durationSeconds);
     setItems([]);
     setPlayerX(initialX);
     setIsScoreSaved(false);
     setIsCatHurt(false);
     setPlayerName(DEFAULT_PLAYER_NAME);
+    setCurrentPhaseKind('normal');
   }
 
   function startGame() {
@@ -526,8 +594,13 @@ export default function App() {
     void audio.play().catch(() => {});
   }
 
-  function startBgm() {
-    const bgm = bgmAudioRefs.current?.[difficulty];
+  function startBgm(phaseKind: PhaseKind = 'normal') {
+    const bgm =
+      phaseKind === 'bonus'
+        ? bonusModeAudioRef.current
+        : phaseKind === 'danger'
+          ? dangerModeAudioRef.current
+          : bgmAudioRefs.current?.[difficulty];
     if (!bgm) {
       return;
     }
@@ -541,6 +614,13 @@ export default function App() {
       return;
     }
     Object.values(bgmAudioRefs.current).forEach((audio) => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
+    [bonusModeAudioRef.current, dangerModeAudioRef.current].forEach((audio) => {
+      if (!audio) {
+        return;
+      }
       audio.pause();
       audio.currentTime = 0;
     });
@@ -709,7 +789,15 @@ export default function App() {
 
                 <div
                   aria-label="Pastel cat"
-                  className={`cat-sprite${isCatHurt ? ' hurt' : ''}`}
+                  className={`cat-sprite${
+                    isCatHurt
+                      ? ' hurt'
+                      : currentPhaseKind === 'bonus'
+                        ? ' mood-bonus'
+                        : currentPhaseKind === 'danger'
+                          ? ' mood-danger'
+                          : ''
+                  }`}
                   style={{ transform: `translate(${playerX}px, ${playerY}px)` }}
                 >
                   <span className="cat-ear cat-ear-left" />

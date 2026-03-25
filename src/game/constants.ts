@@ -1,6 +1,5 @@
-import type { Difficulty, FallingItemConfig } from './types';
+import type { Difficulty, FallingItemConfig, PhaseSchedule } from './types';
 
-export const GAME_DURATION_SECONDS = 90;
 export const STARTING_LIVES = 3;
 export const PLAYER_WIDTH = 72;
 export const PLAYER_HEIGHT = 48;
@@ -34,28 +33,79 @@ export const DIFFICULTY_SETTINGS: Record<
   Difficulty,
   {
     label: string;
+    durationSeconds: number;
     speedMultiplier: number;
     spawnIntervalMs: number;
     badChance: number;
+    phases: PhaseSchedule[];
   }
 > = {
   easy: {
     label: 'Easy',
+    durationSeconds: 90,
     speedMultiplier: 0.75,
     spawnIntervalMs: 950,
     badChance: 0.2,
+    phases: [
+      {
+        triggerTimeLeft: 45,
+        kind: 'bonus',
+        durationSeconds: 15,
+      },
+    ],
   },
   normal: {
     label: 'Normal',
+    durationSeconds: 90,
     speedMultiplier: 1,
     spawnIntervalMs: 760,
     badChance: 0.32,
+    phases: [
+      {
+        triggerTimeLeft: 60,
+        kind: 'bonus',
+        durationSeconds: 10,
+      },
+      {
+        triggerTimeLeft: 30,
+        kind: 'danger',
+        durationSeconds: 5,
+      },
+      {
+        triggerTimeLeft: 15,
+        kind: 'bonus',
+        durationSeconds: 5,
+      },
+    ],
   },
   hard: {
     label: 'Hard',
+    durationSeconds: 90,
     speedMultiplier: 1.3,
     spawnIntervalMs: 620,
     badChance: 0.45,
+    phases: [
+      {
+        triggerTimeLeft: 75,
+        kind: 'bonus',
+        durationSeconds: 10,
+      },
+      {
+        triggerTimeLeft: 60,
+        kind: 'danger',
+        durationSeconds: 5,
+      },
+      {
+        triggerTimeLeft: 30,
+        kind: 'bonus',
+        durationSeconds: 5,
+      },
+      {
+        triggerTimeLeft: 15,
+        kind: 'danger',
+        durationSeconds: 5,
+      },
+    ],
   },
 };
 

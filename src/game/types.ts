@@ -1,4 +1,5 @@
 export type Difficulty = 'easy' | 'normal' | 'hard';
+export type PhaseKind = 'normal' | 'bonus' | 'danger';
 
 export type GameScreen =
   | 'start'
@@ -29,6 +30,12 @@ export interface FallingItemConfig {
   accent: string;
   speed: number;
   size?: number;
+}
+
+export interface PhaseSchedule {
+  triggerTimeLeft: number;
+  kind: Exclude<PhaseKind, 'normal'>;
+  durationSeconds: number;
 }
 
 export interface FallingItem extends FallingItemConfig {

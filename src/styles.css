@@ -730,6 +730,147 @@ h2 {
   top: 1px;
 }
 
+.cat-sprite.mood-bonus .cat-eye {
+  top: 1px;
+  width: 10px;
+  height: 7px;
+  background: transparent;
+}
+
+.cat-sprite.mood-bonus .cat-eye.left {
+  left: 2px;
+  transform: none;
+}
+
+.cat-sprite.mood-bonus .cat-eye.right {
+  right: 2px;
+  transform: none;
+}
+
+.cat-sprite.mood-bonus .cat-eye::before,
+.cat-sprite.mood-bonus .cat-eye::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  width: 6px;
+  height: 3px;
+  background: #55424e;
+  border-radius: 999px;
+}
+
+.cat-sprite.mood-bonus .cat-eye.left::before {
+  left: 0;
+  transform: rotate(-38deg);
+}
+
+.cat-sprite.mood-bonus .cat-eye.left::after {
+  right: 0;
+  transform: rotate(38deg);
+}
+
+.cat-sprite.mood-bonus .cat-eye.right::before {
+  left: 0;
+  transform: rotate(-38deg);
+}
+
+.cat-sprite.mood-bonus .cat-eye.right::after {
+  right: 0;
+  transform: rotate(38deg);
+}
+
+.cat-sprite.mood-bonus .cat-mouth {
+  top: 13px;
+  left: 12px;
+  width: 12px;
+  height: 8px;
+  border-bottom-width: 4px;
+  border-radius: 0 0 12px 12px;
+}
+
+.cat-sprite.mood-bonus .cat-mouth::after {
+  content: '';
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 2px;
+  height: 3px;
+  background: #ff9fbe;
+  border-radius: 0 0 8px 8px;
+}
+
+.cat-sprite.mood-bonus .cat-nose {
+  top: 9px;
+}
+
+.cat-sprite.mood-danger .cat-eye {
+  top: 1px;
+  width: 10px;
+  height: 7px;
+  background: transparent;
+}
+
+.cat-sprite.mood-danger .cat-eye.left {
+  left: 2px;
+  transform: none;
+}
+
+.cat-sprite.mood-danger .cat-eye.right {
+  right: 2px;
+  transform: none;
+}
+
+.cat-sprite.mood-danger .cat-eye::before,
+.cat-sprite.mood-danger .cat-eye::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  width: 6px;
+  height: 3px;
+  background: #55424e;
+  border-radius: 999px;
+}
+
+.cat-sprite.mood-danger .cat-eye.left::before {
+  left: 0;
+  transform: rotate(38deg);
+}
+
+.cat-sprite.mood-danger .cat-eye.left::after {
+  right: 0;
+  transform: rotate(-38deg);
+}
+
+.cat-sprite.mood-danger .cat-eye.right::before {
+  left: 0;
+  transform: rotate(38deg);
+}
+
+.cat-sprite.mood-danger .cat-eye.right::after {
+  right: 0;
+  transform: rotate(-38deg);
+}
+
+.cat-sprite.mood-danger .cat-mouth {
+  top: 14px;
+  left: 13px;
+  width: 10px;
+  height: 8px;
+  border-bottom: 0;
+  border-top: 3px solid #7a5b6a;
+  border-radius: 10px 10px 0 0;
+}
+
+.cat-sprite.mood-danger .cat-mouth::after {
+  content: '';
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: -1px;
+  height: 3px;
+  background: #ff9fbe;
+  border-radius: 8px 8px 0 0;
+}
+
 .tear {
   position: absolute;
   top: 8px;

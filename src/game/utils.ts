@@ -1,11 +1,26 @@
 import { DIFFICULTY_SETTINGS, FALLING_ITEM_CONFIGS, ITEM_SIZE, PLAYER_HEIGHT, PLAYER_WIDTH } from './constants';
-import type { Difficulty, FallingItem, FallingItemConfig } from './types';
+import type { Difficulty, FallingItem, FallingItemConfig, PhaseKind } from './types';
 
 export function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-export function pickItemConfig(difficulty: Difficulty): FallingItemConfig {
+export function pickItemConfig(
+  difficulty: Difficulty,
+  phaseKind: PhaseKind = 'normal',
+): FallingItemConfig {
+  if (phaseKind === 'bonus') {
+    const goodPool = FALLING_ITEM_CONFIGS.filter(
+      (item) => item.kind === 'good' && item.type !== 'heart',
+    );
+    return goodPool[Math.floor(Math.random() * goodPool.length)];
+  }
+
+  if (phaseKind === 'danger') {
+    const badPool = FALLING_ITEM_CONFIGS.filter((item) => item.kind === 'bad');
+    return badPool[Math.floor(Math.random() * badPool.length)];
+  }
+
   const { badChance } = DIFFICULTY_SETTINGS[difficulty];
   const wantsBad = Math.random() < badChance;
   const pool = FALLING_ITEM_CONFIGS.filter((item) =>
@@ -20,8 +35,9 @@ export function createItem(
   id: number,
   difficulty: Difficulty,
   arenaWidth: number,
+  phaseKind: PhaseKind = 'normal',
 ): FallingItem {
-  const config = pickItemConfig(difficulty);
+  const config = pickItemConfig(difficulty, phaseKind);
   const size = config.size ?? ITEM_SIZE;
   const x = Math.random() * Math.max(1, arenaWidth - size);
 
