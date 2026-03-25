@@ -7,8 +7,28 @@ export const PLAYER_HEIGHT = 48;
 export const ITEM_SIZE = 40;
 export const BAD_ITEM_SIZE = 58;
 export const HEART_ITEM_SIZE = 44;
-export const LEADERBOARD_LIMIT = 10;
-export const LEADERBOARD_STORAGE_KEY = 'mochi-catch-leaderboard';
+export const LEADERBOARD_LIMIT = 50;
+export const LIFE_REMAINING_BONUS = 50;
+export const DEFAULT_BRAND_TITLE = 'Mochi Mao';
+export const DEFAULT_PLAYER_NAME = 'Mochi';
+export const SCORE_NAME_SUGGESTIONS = [
+  'Magic Cheesecake Bars',
+  'Mango Sago',
+  'No ChurnIce Cream',
+  'Cake Mix Cookies',
+  'Flourless Banana Bread',
+  'Strawberry Milkshake',
+  'Dubai Chocolate Brownies',
+  'Sponge Cake',
+  '2-Ingredient Ice Cream Bread',
+  'No-Bake Cheesecake Bars',
+  'Flourless Chocolate Cake',
+  'Grandma\'s Cookies',
+  'Skillet Fudgy Brownie',
+  'Giant Fruit Danish',
+  'Homemade Sheet Brownies',
+  'Easy Homemade Churros',
+] as const;
 
 export const DIFFICULTY_SETTINGS: Record<
   Difficulty,
@@ -44,7 +64,7 @@ export const FALLING_ITEM_CONFIGS: FallingItemConfig[] = [
     kind: 'good',
     type: 'mochi',
     label: 'Donut',
-    points: 12,
+    points: 5,
     color: '#ffd7e8',
     accent: '#ff8db7',
     speed: 235,
@@ -53,7 +73,7 @@ export const FALLING_ITEM_CONFIGS: FallingItemConfig[] = [
     kind: 'good',
     type: 'taiyaki',
     label: 'Strawberries',
-    points: 18,
+    points: 5,
     color: '#ffe0b3',
     accent: '#f3a95b',
     speed: 255,
@@ -62,7 +82,7 @@ export const FALLING_ITEM_CONFIGS: FallingItemConfig[] = [
     kind: 'good',
     type: 'dango',
     label: 'Ice Cream',
-    points: 15,
+    points: 10,
     color: '#d7f5e7',
     accent: '#7dcf9f',
     speed: 245,
@@ -82,6 +102,7 @@ export const FALLING_ITEM_CONFIGS: FallingItemConfig[] = [
     kind: 'bad',
     type: 'fishbone',
     label: 'Fish Bone',
+    points: -30,
     damage: 1,
     color: '#efe8dd',
     accent: '#9f9285',
@@ -92,6 +113,7 @@ export const FALLING_ITEM_CONFIGS: FallingItemConfig[] = [
     kind: 'bad',
     type: 'durian',
     label: 'Durian',
+    points: -15,
     damage: 1,
     color: '#d9ed99',
     accent: '#85a947',

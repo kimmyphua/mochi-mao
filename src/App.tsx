@@ -13,14 +13,18 @@ import { GameOverScreen } from './components/GameOverScreen';
 import { LeaderboardScreen } from './components/LeaderboardScreen';
 import { StartScreen } from './components/StartScreen';
 import {
+  DEFAULT_BRAND_TITLE,
+  DEFAULT_PLAYER_NAME,
   DIFFICULTY_SETTINGS,
   GAME_DURATION_SECONDS,
   ITEM_SIZE,
+  LIFE_REMAINING_BONUS,
   PLAYER_HEIGHT,
   PLAYER_WIDTH,
+  SCORE_NAME_SUGGESTIONS,
   STARTING_LIVES,
 } from './game/constants';
-import { addLeaderboardEntry, loadLeaderboard } from './game/storage';
+import { addLeaderboardEntry, isLeaderboardConfigured, loadLeaderboard } from './game/storage';
 import type {
   Difficulty,
   FallingItem,
@@ -43,7 +47,7 @@ export default function App() {
   const [items, setItems] = useState<FallingItem[]>([]);
   const [playerX, setPlayerX] = useState((DEFAULT_ARENA_WIDTH - PLAYER_WIDTH) / 2);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [playerName, setPlayerName] = useState('Mochi');
+  const [playerName, setPlayerName] = useState(DEFAULT_PLAYER_NAME);
   const [isScoreSaved, setIsScoreSaved] = useState(false);
   const [isCatHurt, setIsCatHurt] = useState(false);
   const [arenaScale, setArenaScale] = useState(1);
@@ -78,6 +82,8 @@ export default function App() {
   const gameLayoutRef = useRef<HTMLElement>(null);
   const hudRef = useRef<HTMLDivElement>(null);
   const touchControlsRef = useRef<HTMLDivElement>(null);
+
+  const leaderboardConfigured = isLeaderboardConfigured();
 
   useEffect(() => {
     const updateArenaSize = () => {
@@ -128,7 +134,7 @@ export default function App() {
       audio.volume = 0.35;
     });
 
-    setLeaderboard(loadLeaderboard());
+    void loadLeaderboard().then(setLeaderboard);
   }, []);
 
   useEffect(() => {
@@ -324,7 +330,7 @@ export default function App() {
       setItems((currentItems) => {
         const merged = [...currentItems, ...nextItems];
         const remaining: FallingItem[] = [];
-        let pointsGained = 0;
+        let scoreDelta = 0;
         let livesLost = 0;
         let livesGained = 0;
 
@@ -335,10 +341,11 @@ export default function App() {
           if (isColliding(movedItem, gameStateRef.current.playerX, playerY)) {
             if (movedItem.type === 'heart') {
               livesGained += movedItem.heal ?? 1;
-            } else if (movedItem.kind === 'good') {
-              pointsGained += movedItem.points ?? 0;
             } else {
+              scoreDelta += movedItem.points ?? 0;
+              if (movedItem.kind === 'bad') {
               livesLost += movedItem.damage ?? 1;
+              }
             }
             return;
           }
@@ -348,17 +355,16 @@ export default function App() {
           }
         });
 
-        if (pointsGained > 0) {
-          playSound(goodCatchAudioRef.current);
+        if (scoreDelta !== 0) {
+          playSound(scoreDelta > 0 ? goodCatchAudioRef.current : badCatchAudioRef.current);
           setScore((currentScore) => {
-            const nextScore = currentScore + pointsGained;
+            const nextScore = currentScore + scoreDelta;
             gameStateRef.current.score = nextScore;
             return nextScore;
           });
         }
 
         if (livesLost > 0) {
-          playSound(badCatchAudioRef.current);
           triggerCatHurt();
           setLives((currentLives) => {
             const nextLives = Math.max(0, currentLives - livesLost);
@@ -380,7 +386,7 @@ export default function App() {
       });
 
       if (gameStateRef.current.timeLeft <= 0 || gameStateRef.current.lives <= 0) {
-        finishGame();
+        finishGame(gameStateRef.current.timeLeft <= 0 ? 'timeout' : 'lives');
         return;
       }
 
@@ -420,6 +426,7 @@ export default function App() {
     setPlayerX(initialX);
     setIsScoreSaved(false);
     setIsCatHurt(false);
+    setPlayerName(DEFAULT_PLAYER_NAME);
   }
 
   function startGame() {
@@ -446,33 +453,45 @@ export default function App() {
     return 20 + Math.random() * 10;
   }
 
-  function finishGame() {
+  function finishGame(reason: 'timeout' | 'lives') {
     stopBgm();
     playSound(gameOverAudioRef.current);
     if (animationFrameRef.current) {
       window.cancelAnimationFrame(animationFrameRef.current);
     }
+    if (reason === 'timeout' && gameStateRef.current.lives > 0) {
+      const timeoutBonus = gameStateRef.current.lives * LIFE_REMAINING_BONUS;
+      gameStateRef.current.score += timeoutBonus;
+      setScore(gameStateRef.current.score);
+    }
+    setPlayerName(
+      SCORE_NAME_SUGGESTIONS[
+        Math.floor(Math.random() * SCORE_NAME_SUGGESTIONS.length)
+      ] ?? DEFAULT_PLAYER_NAME,
+    );
     setScreen('gameOver');
     setItems([]);
     movementRef.current = 0;
     setIsCatHurt(false);
   }
 
-  function saveScore() {
+  async function saveScore() {
     const trimmedName = playerName.trim();
     if (!trimmedName || isScoreSaved) {
       return;
     }
 
-    const nextLeaderboard = addLeaderboardEntry({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      name: trimmedName,
-      score,
-      difficulty,
-      createdAt: Date.now(),
-    });
-    setLeaderboard(nextLeaderboard);
-    setIsScoreSaved(true);
+    try {
+      const nextLeaderboard = await addLeaderboardEntry({
+        name: trimmedName,
+        score,
+        difficulty,
+      });
+      setLeaderboard(nextLeaderboard);
+      setIsScoreSaved(true);
+    } catch (error) {
+      console.error('Failed to save score', error);
+    }
   }
 
   function handleSwipeStart(clientX: number) {
@@ -576,7 +595,7 @@ export default function App() {
               : ''
           }`}
         >
-          <p className="pixel-badge">Mochi Mao</p>
+          <p className="pixel-badge">{DEFAULT_BRAND_TITLE}</p>
           <p className="brand-copy">
             Catch the treats. Dodge the trouble.
           </p>
@@ -628,6 +647,7 @@ export default function App() {
 
         {screen === 'gameOver' && (
           <GameOverScreen
+            canSaveScore={leaderboardConfigured}
             difficulty={difficulty}
             isScoreSaved={isScoreSaved}
             leaderboard={leaderboard}

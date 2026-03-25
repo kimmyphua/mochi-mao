@@ -42,5 +42,5 @@ export interface LeaderboardEntry {
   name: string;
   score: number;
   difficulty: Difficulty;
-  createdAt: number;
+  createdAt: string;
 }

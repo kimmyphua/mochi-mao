@@ -5,6 +5,7 @@ interface GameOverScreenProps {
   difficulty: Difficulty;
   playerName: string;
   isScoreSaved: boolean;
+  canSaveScore: boolean;
   leaderboard: LeaderboardEntry[];
   onNameChange: (value: string) => void;
   onSaveScore: () => void;
@@ -18,6 +19,7 @@ export function GameOverScreen({
   difficulty,
   playerName,
   isScoreSaved,
+  canSaveScore,
   leaderboard,
   onNameChange,
   onSaveScore,
@@ -25,6 +27,10 @@ export function GameOverScreen({
   onHome,
   onShowLeaderboard,
 }: GameOverScreenProps) {
+  const difficultyEntries = leaderboard
+    .filter((entry) => entry.difficulty === difficulty)
+    .slice(0, 5);
+
   return (
     <section className="panel screen-card app-screen-card game-over-screen">
       <p className="eyebrow">Round Finished</p>
@@ -57,7 +63,7 @@ export function GameOverScreen({
         <div className="save-score-row">
           <input
             id="player-name"
-            maxLength={14}
+            maxLength={48}
             onChange={(event) => onNameChange(event.target.value)}
             placeholder="Cat name"
             type="text"
@@ -65,30 +71,34 @@ export function GameOverScreen({
           />
           <button
             className="primary-button"
-            disabled={isScoreSaved || playerName.trim().length === 0}
+            disabled={!canSaveScore || isScoreSaved || playerName.trim().length === 0}
             onClick={onSaveScore}
             type="button"
           >
-            {isScoreSaved ? 'Saved' : 'Save'}
+            {!canSaveScore ? 'Offline' : isScoreSaved ? 'Saved' : 'Save'}
           </button>
         </div>
       </div>
 
       <div className="mini-board">
         <div className="section-head">
-          <p className="section-label">Top scores</p>
+          <p className="section-label">
+            Top {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} scores
+          </p>
           <button className="link-button" onClick={onShowLeaderboard} type="button">
             View all
           </button>
         </div>
         <ol>
-          {leaderboard.slice(0, 5).map((entry) => (
+          {difficultyEntries.map((entry) => (
             <li key={entry.id}>
               <span>{entry.name}</span>
               <strong>{entry.score}</strong>
             </li>
           ))}
-          {leaderboard.length === 0 && <li className="empty-state">No scores yet.</li>}
+          {difficultyEntries.length === 0 && (
+            <li className="empty-state">No {difficulty} scores yet.</li>
+          )}
         </ol>
       </div>
 

@@ -159,6 +159,13 @@ button {
   color: #9b6480;
 }
 
+.gameover-title {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  font-size: clamp(0.82rem, 1.7vw, 1rem);
+}
+
 .brand-title,
 h1,
 h2 {
@@ -394,6 +401,30 @@ h2 {
   align-content: start;
   overflow: auto;
   padding-right: 4px;
+}
+
+.leaderboard-sections {
+  display: grid;
+  gap: 14px;
+}
+
+.leaderboard-group {
+  border: 2px solid rgba(141, 110, 129, 0.24);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.38);
+  padding: 12px;
+}
+
+.leaderboard-group .section-label {
+  margin-bottom: 8px;
+}
+
+.leaderboard-group ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .game-over-screen .mini-board {
